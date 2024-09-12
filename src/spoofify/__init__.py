@@ -74,4 +74,4 @@ async def index():
 
 
 def main():
-    app.run(debug=app.config.get("DEBUG"))
+    app.run()
