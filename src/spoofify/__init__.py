@@ -14,13 +14,13 @@ app.config.from_prefixed_env("SPOOFIFY")
 safe_json_loads: Final = as_result(JSONDecodeError)(quart.json.loads)
 
 
-def make_llm_payload(prompt: str) -> dict:
+def make_llm_payload(prompt: str, context: list[int] = None) -> dict:
     return {
         "model": "llama3.1:8b-instruct-q8_0",
         "prompt": prompt,
         "stream": False,
         "keep_alive": "3h",
-        "context": [],
+        "context": context or [],
     }
 
 
@@ -42,11 +42,11 @@ async def query_llm(payload: dict) -> Result[str, str]:
     )
 
     safe_get_response = as_result(httpx.RequestError, KeyError)(
-        lambda response: response.json()["response"]
+        lambda r: r.json()["response"]
     )
 
     if (response := await safe_post(f"{base_url}/api/generate", json=payload)).is_err():
-        return response.err()
+        return Err(str(response.err()))
 
     return safe_get_response(response.ok())
 
@@ -82,7 +82,7 @@ async def wake_up_model():
 
 @app.before_serving
 async def startup():
-    app.httpx_client = httpx.AsyncClient()
+    app.httpx_client = httpx.AsyncClient(timeout=30)
     app.add_background_task(wake_up_model)
 
 
@@ -91,21 +91,51 @@ async def shutdown():
     await app.httpx_client.aclose()
 
 
-@app.route("/")
-async def index():
+async def get_data() -> Result[dict, tuple[str, int]]:
     if not app.model_ready:
-        return "LLM isn't ready", 503
+        return Err(("LLM isn't ready", 503))
 
     genre = await get_genre()
     if not genre:
-        return "Couldn't get a genre", 502
+        return Err(("Couldn't get a genre", 502))
 
     match await get_band_info(genre):
         case Ok(band_info):
-            return quart.jsonify(band_info)
+            return Ok(band_info)
         case Err(e):
-            return f"Failed to get response from LLM: {e}", 502
+            return Err((f"Failed to get response from LLM: {e}", 502))
+
+
+@app.route("/json")
+async def get_json():
+    result = await get_data()
+    match result:
+        case Ok(band_info):
+            return quart.jsonify(band_info)
+        case Err((message, status)):
+            return quart.jsonify({"error": message}), status
+
+
+@app.route("/")
+async def index():
+    match await get_data():
+        case Ok(band_info):
+            prompt = (
+                "Generate simple HTML to present the following data. "
+                "The output will be passed directly to a browser to render, "
+                "so don't use templating languages, and don't include any comments "
+                f"or Markdown formatting. Your response should contain only HTML. "
+                f"The data is: {band_info}"
+            )
+            payload = make_llm_payload(prompt)
+            match await query_llm(payload):
+                case Ok(response):
+                    return response
+                case Err(e):
+                    return f"Failed to get HTML: {e}", 502
+        case Err((message, status)):
+            return message, status
 
 
 def main():
-    app.run()
+    app.run(debug=True)
