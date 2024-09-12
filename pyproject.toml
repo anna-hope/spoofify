@@ -29,7 +29,7 @@ dev-dependencies = [
 
 [tool.rye.scripts]
 devserver = { cmd = "rye run spoofify", env-file = ".dev.env" }
-prodserver = { cmd = "hypercorn spoofify:main", env-file = ".prod.env" }
+prodserver = { cmd = "hypercorn spoofify:app", env-file = ".prod.env" }
 
 [tool.hatch.metadata]
 allow-direct-references = true
