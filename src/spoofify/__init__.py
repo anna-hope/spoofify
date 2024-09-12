@@ -84,6 +84,9 @@ async def index():
         return "LLM isn't ready", 503
 
     genre = await get_genre()
+    if not genre:
+        return "Couldn't get a genre", 502
+
     match await get_band_info(genre):
         case Ok(band_info):
             return quart.jsonify(band_info)
