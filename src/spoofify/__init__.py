@@ -31,8 +31,8 @@ async def get_genre() -> str:
 async def query_llm(payload: dict) -> Result[str, str]:
     httpx_client: httpx.AsyncClient = quart.current_app.httpx_client
     base_url = app.config["LLAMA_URL"]
-    response = await httpx_client.post(f"{base_url}/api/generate", json=payload)
     try:
+        response = await httpx_client.post(f"{base_url}/api/generate", json=payload)
         return Ok(response.json()["response"])
     except Exception as e:
         return Err(f"Failed to get the LLM response: {e}")
