@@ -1,10 +1,11 @@
 import asyncio
+import datetime as dt
 from json.decoder import JSONDecodeError
 from typing import Final
 
 import httpx
 import quart
-from result import Result, Ok, Err, as_result, do_async
+from result import Result, Ok, Err, as_result, as_async_result, do_async
 
 app = quart.Quart(__name__)
 app.config.from_prefixed_env("SPOOFIFY")
@@ -35,11 +36,18 @@ async def get_genre() -> str:
 async def query_llm(payload: dict) -> Result[str, str]:
     httpx_client: httpx.AsyncClient = quart.current_app.httpx_client
     base_url = app.config["LLAMA_URL"]
-    try:
-        response = await httpx_client.post(f"{base_url}/api/generate", json=payload)
-        return Ok(response.json()["response"])
-    except Exception as e:
-        return Err(f"Failed to get the LLM response: {e}")
+    safe_post = as_async_result(httpx.NetworkError, httpx.TimeoutException)(
+        httpx_client.post
+    )
+
+    safe_get_response = as_result(httpx.RequestError, KeyError)(
+        lambda response: response.json()["response"]
+    )
+
+    if (response := await safe_post(f"{base_url}/api/generate", json=payload)).is_err():
+        return response.err()
+
+    return safe_get_response(response.ok())
 
 
 async def get_band_info(genre: str) -> Result[dict, str]:
@@ -50,8 +58,10 @@ async def get_band_info(genre: str) -> Result[dict, str]:
         f"You are given a fictional genre: {genre}."
         "Respond with fictional band information, as JSON in the format "
         "with keys "
-        "{band_name: string, band_members: [1-5][string], top_songs[5][string], related_bands[5][string]}. "
+        "{band_name: string, band_members: [1-5][string], top_songs[5][string], "
+        "related_bands[5][string]}, next_tour_date: YYYY-MM-DD. "
         "In your response, give only 1 JSON object with no formatting, and no other output."
+        f"Current date is {dt.date.today()}"
     )
     payload = make_llm_payload(prompt)
     return await do_async(
