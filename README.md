@@ -54,7 +54,7 @@ SPOOFIFY_LLAMA_URL=<url_of_llama_instance>`
 (You can also set the environment variable manually
 and use `rye run spoofify`)
 
-You can either run your own local ollama 
+You can either run your own local [Ollama](https://ollama.com/)
 (with `llama3.1:8b-instruct-q8_0`, currently hardcoded)
 or ask @anna-hope for a URL to her own instance
 (if you're a Recurser or another friend, you should
@@ -103,6 +103,8 @@ rye build --wheel --clean
 docker build . --tag spoofify
 docker run -p 8000:8000 -e SPOOFIFY_LLAMA_URL=<llama_url> spoofify
 ```
+
+(The above may need more work depending on how ollama is being served)
 
 ## LLM notes
 
