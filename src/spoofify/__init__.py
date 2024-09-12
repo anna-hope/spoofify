@@ -1,11 +1,15 @@
 import asyncio
+from json.decoder import JSONDecodeError
+from typing import Final
 
 import httpx
 import quart
-from result import Result, Ok, Err
+from result import Result, Ok, Err, as_result, do_async
 
 app = quart.Quart(__name__)
 app.config.from_prefixed_env("SPOOFIFY")
+
+safe_json_loads: Final = as_result(JSONDecodeError)(quart.json.loads)
 
 
 def make_llm_payload(prompt: str) -> dict:
@@ -45,17 +49,15 @@ async def get_band_info(genre: str) -> Result[dict, str]:
     prompt = (
         f"You are given a fictional genre: {genre}."
         "Respond with fictional band information, as JSON in the format "
-        "with keys {band_name: string, band_members: [1..5][string], top_songs[5][string]}. "
+        "with keys {band_name: string, band_members: [1-5][string], top_songs[5][string]}. "
         "In your response, give only 1 JSON object with no formatting, and no other output."
     )
     payload = make_llm_payload(prompt)
-    result = await query_llm(payload)
-    match result:
-        case Ok(llm_response):
-            band_info = {"genre": genre, **quart.json.loads(llm_response)}
-            return Ok(band_info)
-        case _:
-            return result
+    return await do_async(
+        Ok({"genre": genre, **parsed_llm_response})
+        for llm_response in await query_llm(payload)
+        for parsed_llm_response in safe_json_loads(llm_response)
+    )
 
 
 async def wake_up_model():
@@ -82,7 +84,6 @@ async def index():
         return "LLM isn't ready", 503
 
     genre = await get_genre()
-    assert genre
     match await get_band_info(genre):
         case Ok(band_info):
             return quart.jsonify(band_info)
