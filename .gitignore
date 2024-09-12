@@ -15,3 +15,6 @@ wheels/
 # PyCharm
 .idea
 
+# local env
+*.env
+
