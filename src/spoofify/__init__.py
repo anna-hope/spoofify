@@ -41,7 +41,7 @@ async def query_llm(payload: dict) -> Result[str, str]:
     )
 
     safe_get_response = as_result(httpx.RequestError, KeyError)(
-        lambda response: response.json()["response"]
+        lambda r: r.json()["response"]
     )
 
     if (response := await safe_post(f"{base_url}/api/generate", json=payload)).is_err():
@@ -118,17 +118,20 @@ async def get_json():
 async def index():
     match await get_data():
         case Ok(band_info):
-            prompt = (f"Given this JSON: {quart.json.dumps(band_info)}. "
-                      "generate HTML that presents the full data."
-                      "Respond only with pure HTML, ready to be rendered by a browser, "
-                      "with no templating, and no other output")
+            prompt = (
+                "Generate simple HTML to present the following data. "
+                "The output will be passed directly to a browser to render, "
+                "so don't use templating languages, and don't include any comments "
+                f"or Markdown formatting. Your response should contain only HTML. "
+                f"The data is: {band_info}"
+            )
             payload = make_llm_payload(prompt)
             match await query_llm(payload):
                 case Ok(response):
                     return response
                 case Err(e):
                     return f"Failed to get HTML: {e}", 502
-        case Err(message, status):
+        case Err((message, status)):
             return message, status
 
 
