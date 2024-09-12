@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 from json.decoder import JSONDecodeError
+import random
 from typing import Final
 
 import httpx
@@ -54,12 +55,13 @@ async def get_band_info(genre: str) -> Result[dict, str]:
     while not quart.current_app.model_ready:
         await asyncio.sleep(5)
 
+    num_members = random.randint(1, 5)
     prompt = (
         f"You are given a fictional genre: {genre}."
         "Respond with fictional band information, as JSON in the format "
         "with keys "
-        "{band_name: string, band_members: [1-5][string], top_songs[5][string], "
-        "related_bands[5][string]}, next_tour_date: YYYY-MM-DD. "
+        f"{{band_name: string, band_members: [{num_members}][string], top_songs[5][string], "
+        "related_bands[5][string], next_tour_date: YYYY-MM-DD}. "
         "In your response, give only 1 JSON object with no formatting, and no other output."
         f"Current date is {dt.date.today()}"
     )
