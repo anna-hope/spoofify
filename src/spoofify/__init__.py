@@ -1,5 +1,8 @@
+import asyncio
+
 import httpx
 import quart
+from result import Result, Ok, Err
 
 app = quart.Quart(__name__)
 app.config.from_prefixed_env("SPOOFIFY")
@@ -25,17 +28,20 @@ async def get_genre() -> str:
     return response.json()
 
 
-async def query_llm(payload: dict) -> str:
+async def query_llm(payload: dict) -> Result[str, str]:
     httpx_client: httpx.AsyncClient = quart.current_app.httpx_client
     base_url = app.config["LLAMA_URL"]
     response = await httpx_client.post(f"{base_url}/api/generate", json=payload)
     try:
-        return response.json()["response"]
+        return Ok(response.json()["response"])
     except Exception as e:
-        print(response)
+        return Err(f"Failed to get the LLM response: {e}")
 
 
-async def get_band_info(genre: str) -> dict:
+async def get_band_info(genre: str) -> Result[dict, str]:
+    while not quart.current_app.model_ready:
+        await asyncio.sleep(5)
+
     prompt = (
         f"You are given a fictional genre: {genre}."
         "Respond with fictional band information, as JSON in the format "
@@ -43,15 +49,20 @@ async def get_band_info(genre: str) -> dict:
         "In your response, give only 1 JSON object with no formatting, and no other output."
     )
     payload = make_llm_payload(prompt)
-    llm_response = await query_llm(payload)
-    band_info = {"genre": genre, **quart.json.loads(llm_response)}
-    return band_info
+    result = await query_llm(payload)
+    match result:
+        case Ok(llm_response):
+            band_info = {"genre": genre, **quart.json.loads(llm_response)}
+            return Ok(band_info)
+        case _:
+            return result
 
 
 async def wake_up_model():
     """Sends a dummy empty prompt to the model to make sure it's loaded"""
     payload = make_llm_payload("")
     await query_llm(payload)
+    quart.current_app.model_ready = True
 
 
 @app.before_serving
@@ -67,10 +78,16 @@ async def shutdown():
 
 @app.route("/")
 async def index():
+    if not app.model_ready:
+        return "LLM isn't ready", 503
+
     genre = await get_genre()
     assert genre
-    band_info = await get_band_info(genre)
-    return quart.jsonify(band_info)
+    match await get_band_info(genre):
+        case Ok(band_info):
+            return quart.jsonify(band_info)
+        case Err(e):
+            return f"Failed to get response from LLM: {e}", 502
 
 
 def main():
