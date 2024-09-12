@@ -37,6 +37,9 @@ Prerequisites:
 
 - [Rye](https://rye.astral.sh/)
 
+You may want to run `rye self update` if you haven't
+recently.
+
 #### Run locally
 
 Create a `.dev.env` file with
@@ -84,6 +87,22 @@ You can run the *extensive* test suite with
 `rye lint`
 
 (Uses Ruff)
+
+### Dockerize
+
+Since we want to keep the ability to install the package
+(so we can import it and use with `hypercorn` to serve in
+production, or with `pytest`), we need to follow
+[these instructions from Rye's documentation](https://rye.astral.sh/guide/docker/#container-from-a-python-package)
+
+Concretely, this currently requires manually building the package
+before you can run `docker build` (not optimal, I know):
+
+```shell
+rye build --wheel --clean
+docker build . --tag spoofify
+docker run -p 8000:8000 -e SPOOFIFY_LLAMA_URL=<llama_url> spoofify
+```
 
 ## LLM notes
 
@@ -177,6 +196,32 @@ or, I don't know, maybe you're in the mood to
 
 }
 ```
+
+... or headbang to whatever this is
+
+```json
+{
+
+      "band_members": [
+            "Vinnie 'The Bull' Blackwood",
+            "Lars 'Lethal' Larsen",
+            "Emily 'The Enforcer' Evans",
+            "Jaxson 'Jolt' Jackson",
+            "Maxwell 'Maelstrom' Martin"
+      ],
+      "band_name": "Riffwreck",
+      "genre": "aggrohaus",
+      "top_songs": [
+            "Burning Inferno",
+            "Cathedral of Chaos",
+            "Echoes of Anarchy",
+            "Hammerfall of Hell",
+            "Terror in Tones"
+      ]
+
+}
+```
+
 
 *(Honestly, I could keep adding these forever)*
 
