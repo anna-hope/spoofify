@@ -45,7 +45,7 @@ async def query_llm(payload: dict) -> Result[str, str]:
     )
 
     if (response := await safe_post(f"{base_url}/api/generate", json=payload)).is_err():
-        return response.err()
+        return Err(str(response.err()))
 
     return safe_get_response(response.ok())
 
