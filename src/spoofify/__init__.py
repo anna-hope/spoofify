@@ -19,7 +19,7 @@ def make_llm_payload(prompt: str, context: list[int] = None) -> dict:
         "prompt": prompt,
         "stream": False,
         "keep_alive": "3h",
-        "context": [] or context,
+        "context": context or [],
     }
 
 
