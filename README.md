@@ -61,6 +61,8 @@ know where to find her!)
 
 (This is important for any serious application.)
 
+- Create `.prod.env` with `SPOOFIFY_LLAMA_URL` that points
+to the hyper-optimized production instance of your LLM
 - `rye run prodserver`
 
 ### Run tests
