@@ -84,6 +84,127 @@ responses that satisfy the expected format, but are otherwise
 strange or otherwise not ideal. Or sometimes it might completely fail to
 do what we want.
 
+### Example outputs
+
+Wouldn't you want to scream your lungs out to these
+anthems of a forever-lost generation?
+
+```json
+{
+      "band_members": [
+            "Vinnie Grits",
+            "Lizzy Misanthrope",
+            "Jesse Riffington",
+            "Mike Dirtdrinker",
+            "Sammy Scourge"
+      ],
+      "band_name": "Bleakstar",
+      "genre": "grungetimism",
+      "top_songs": [
+            "Slumming It",
+            "Gutter Revival",
+            "Fuel for the Fire",
+            "Blackout in a Box",
+            "Riot's Revenge"
+      ]
+}
+```
+
+... or let your mind drift off into the pleasant musical abyss
+to this?
+
+```json
+{
+
+      "band_members": [
+            "Lyra Lumen",
+            "Kai Rhythm",
+            "Aria Waves",
+            "Nova Synth",
+            "Caelum Beat"
+      ],
+      "band_name": "Echoflux",
+      "genre": "neurochillhaus",
+      "top_songs": [
+            "Lost in the Haze",
+            "Fractured Dreams",
+            "Neuromantic",
+            "Synthetic Skies",
+            "Cosmic Drift"
+      ]
+
+}
+```
+
+or, I don't know, maybe you're in the mood to
+*feel all the feels* with these as your soundtrack?
+
+```json
+{
+
+      "band_members": [
+            "Maxwell Wells",
+            "Ava Morales",
+            "Liam Flynn",
+            "Ethan Patel",
+            "Julia Knight"
+      ],
+      "band_name": "Echo Fade",
+      "genre": "heavy singer-songwriter",
+      "top_songs": [
+            "Whiskey in the Rain",
+            "Ghosts of Summer",
+            "Fading Fast",
+            "Lost and Found",
+            "Burning Skies"
+      ]
+
+}
+```
+
+*(Honestly, I could keep adding these forever)*
+
+... sometimes the model decides to get a bit *too* creative:
+
+```json
+{
+
+      "band_members": [
+            {
+                  "instrument": "Lead Vocals, Synth",
+                  "name": "Aurora Vex"
+            },
+            {
+                  "instrument": "Drums, Percussion",
+                  "name": "Kai Riven"
+            },
+            {
+                  "instrument": "Bass Guitar",
+                  "name": "Lena Lyrax"
+            },
+            {
+                  "instrument": "Guitar, Effects",
+                  "name": "Caspian Noir"
+            }
+      ],
+      "band_name": "Echo Flux",
+      "genre": "dance-techno whittle",
+      "top_songs": [
+            "Whittle Frenzy",
+            "Fractured Rhythm",
+            "Echo Chamber",
+            "Techno Tectonic",
+            "Lost in the Whirl"
+      ]
+
+}
+```
+
+Like, thank you for telling us who does what,
+llama, but now you've broken *all of our* clients' 
+applications with this response.
+
+(Maybe I *should* make it return the instruments, though.)
 
 ## Additional information
 
