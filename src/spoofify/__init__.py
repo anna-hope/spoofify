@@ -49,7 +49,8 @@ async def get_band_info(genre: str) -> Result[dict, str]:
     prompt = (
         f"You are given a fictional genre: {genre}."
         "Respond with fictional band information, as JSON in the format "
-        "with keys {band_name: string, band_members: [1-5][string], top_songs[5][string]}. "
+        "with keys "
+        "{band_name: string, band_members: [1-5][string], top_songs[5][string], related_bands[5][string]}. "
         "In your response, give only 1 JSON object with no formatting, and no other output."
     )
     payload = make_llm_payload(prompt)
