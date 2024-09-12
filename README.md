@@ -39,15 +39,29 @@ Prerequisites:
 
 #### Run locally
 
+Create a `.dev.env` file with
+
+```dotenv
+SPOOFIFY_LLAMA_URL=<url_of_llama_instance>`
+```
+
 - `rye sync`
-- `export SPOOFIFY_LLAMA_URL=<url_of_llama_instance>`
-- `rye run`
+- `rye run devserver`
+
+(You can also set the environment variable manually
+and use `rye run spoofify`)
 
 You can either run your own local ollama 
 (with `llama3.1:8b-instruct-q8_0`, currently hardcoded)
 or ask @anna-hope for a URL to her own instance
 (if you're a Recurser or another friend, you should
 know where to find her!)
+
+### Run in production
+
+(This is important for any serious application.)
+
+- `rye run prodserver`
 
 ### Run tests
 
