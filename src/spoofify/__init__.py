@@ -13,13 +13,13 @@ app.config.from_prefixed_env("SPOOFIFY")
 safe_json_loads: Final = as_result(JSONDecodeError)(quart.json.loads)
 
 
-def make_llm_payload(prompt: str) -> dict:
+def make_llm_payload(prompt: str, context: list[int] = None) -> dict:
     return {
         "model": "llama3.1:8b-instruct-q8_0",
         "prompt": prompt,
         "stream": False,
         "keep_alive": "3h",
-        "context": [],
+        "context": [] or context,
     }
 
 
@@ -80,7 +80,7 @@ async def wake_up_model():
 
 @app.before_serving
 async def startup():
-    app.httpx_client = httpx.AsyncClient()
+    app.httpx_client = httpx.AsyncClient(timeout=30)
     app.add_background_task(wake_up_model)
 
 
@@ -89,21 +89,48 @@ async def shutdown():
     await app.httpx_client.aclose()
 
 
-@app.route("/")
-async def index():
+async def get_data() -> Result[dict, tuple[str, int]]:
     if not app.model_ready:
-        return "LLM isn't ready", 503
+        return Err(("LLM isn't ready", 503))
 
     genre = await get_genre()
     if not genre:
-        return "Couldn't get a genre", 502
+        return Err(("Couldn't get a genre", 502))
 
     match await get_band_info(genre):
         case Ok(band_info):
-            return quart.jsonify(band_info)
+            return Ok(band_info)
         case Err(e):
-            return f"Failed to get response from LLM: {e}", 502
+            return Err((f"Failed to get response from LLM: {e}", 502))
+
+
+@app.route("/json")
+async def get_json():
+    result = await get_data()
+    match result:
+        case Ok(band_info):
+            return quart.jsonify(band_info)
+        case Err((message, status)):
+            return quart.jsonify({"error": message}), status
+
+
+@app.route("/")
+async def index():
+    match await get_data():
+        case Ok(band_info):
+            prompt = (f"Given this JSON: {quart.json.dumps(band_info)}. "
+                      "generate HTML that presents the full data."
+                      "Respond only with pure HTML, ready to be rendered by a browser, "
+                      "with no templating, and no other output")
+            payload = make_llm_payload(prompt)
+            match await query_llm(payload):
+                case Ok(response):
+                    return response
+                case Err(e):
+                    return f"Failed to get HTML: {e}", 502
+        case Err(message, status):
+            return message, status
 
 
 def main():
-    app.run()
+    app.run(debug=True)
